@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import Recipe, { IRecipe } from './model/Recipe';
+import User, { IUser } from './model/Users';
 
 
 const app = express();
@@ -58,6 +59,29 @@ app.get('/recipes', async (req: Request, res: Response) => {
     }
 }
 );
+
+app.get('/recipes/:username', async (req: Request, res: Response) => {
+    try {
+        const username = req.params.username;
+        const recipes = await Recipe.find({ createdBy: username });
+        res.json(recipes);
+    }
+});
+
+app.get('/recipes/:id', async (req: Request, res: Response) => {
+    try {
+        const recipeId = req.params.id;
+        const recipe = await Recipe.findById(recipeId);
+        if (!recipe) {
+            return res.status(404).json({ error: 'Recipe not found' });
+        }
+        res.json(recipe);
+    }
+    catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
