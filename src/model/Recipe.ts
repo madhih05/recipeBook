@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { triggerAsyncId } from 'node:async_hooks';
 
 export interface IRecipe extends Document {
     title: string;
