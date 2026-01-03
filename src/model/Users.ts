@@ -10,8 +10,8 @@ export interface IUser extends Document {
     username: string;                            // Unique username
     email: string;                               // User's email address (stored for login)
     password: string;                            // Password hash (never plain text)
-    savedRecipes: mongoose.Types.ObjectId[];     // References to saved Recipe documents
-    dietaryPreferences?: string[];                // Optional dietary restrictions/preferences
+    savedRecipes?: mongoose.Types.ObjectId[];     // References to saved Recipe documents
+    dietaryPreferences?: string[];               // Optional dietary restrictions/preferences
     createdAt: Date;                             // Account creation timestamp
 }
 
@@ -45,7 +45,8 @@ const UserSchema: Schema = new Schema({
     // Saved recipes feature - stores references to Recipe documents
     savedRecipes: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Recipe'   // Population reference to Recipe collection
+        ref: 'Recipe',   // Population reference to Recipe collection
+        default: []      // Initializes as empty array
     }],
     // User's dietary restrictions and preferences
     dietaryPreferences: {
