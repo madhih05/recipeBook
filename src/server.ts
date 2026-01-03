@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 // Import MongoDB object document mapper
 import mongoose from 'mongoose';
 // Import recipe routes
-import recipeRoutes from './routes/recipeRoutes';
+import recipeRoutes from './routes/data';
 import registrationRoutes from './routes/auth';
 
 // Initialize Express application
