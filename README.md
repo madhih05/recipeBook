@@ -11,6 +11,7 @@ A Node.js/Express REST API for managing and querying recipes with user authentic
   - [Authentication](#authentication)
   - [Recipes](#recipes)
   - [Users](#users)
+- [Logging](#logging)
 - [Error Handling](#error-handling)
 - [Security Notes](#security-notes)
 
@@ -28,7 +29,14 @@ Create a `.env` file in the project root with the following variables:
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/recipebook?retryWrites=true&w=majority&appName=RecipeBook
 JWT_SECRET=your_jwt_secret_key_here
 PORT=3000
+LOG_LEVEL=info
 ```
+
+**Configuration Options:**
+- `MONGODB_URI`: MongoDB connection string
+- `JWT_SECRET`: Secret key for JWT token signing
+- `PORT`: Server port (default: 3000)
+- `LOG_LEVEL`: Logging level - `error`, `warn`, `info`, `debug` (default: `info`)
 
 ## Running the Server
 
@@ -404,6 +412,104 @@ GET /user/johndoe
 **Note:**
 - User email is excluded from the response for privacy
 - Returns only the public profile information
+
+---
+
+## Logging
+
+The application uses [Winston](https://github.com/winstonjs/winston) for comprehensive logging of all endpoints and important actions.
+
+### Log Outputs
+
+Logs are recorded in two formats:
+
+1. **Console Output**: Colored, human-readable logs displayed in the terminal during development
+2. **File Output**: JSON-formatted logs stored in the `logs/` directory
+   - `logs/combined.log`: All logs (info, warn, error)
+   - `logs/error.log`: Error-level logs only
+
+### Log Rotation
+
+Log files automatically rotate when they reach:
+- **Max file size**: 5MB
+- **Max files kept**: 5 (oldest files are automatically deleted)
+
+### Logged Events
+
+The application logs the following events:
+
+**Server & Database:**
+- MongoDB connection success/failure
+- Server startup information
+
+**Authentication:**
+- User registration attempts (success/failure)
+- Login attempts (success/failure)
+- Token authentication (success/failure)
+- Unauthorized access attempts
+
+**Recipe Operations:**
+- Recipe queries with filter parameters
+- Recipe creation with details
+- Recipe retrieval by ID
+- Recipe deletion attempts
+- Authorization failures
+
+**User Operations:**
+- User profile fetches
+- User not found errors
+
+### Log Levels
+
+Configure the log level via the `LOG_LEVEL` environment variable:
+
+```bash
+LOG_LEVEL=debug  # Shows all logs
+LOG_LEVEL=info   # Default - shows info, warn, error
+LOG_LEVEL=warn   # Shows only warnings and errors
+LOG_LEVEL=error  # Shows only errors
+```
+
+### Log Format
+
+**Console (Development):**
+```
+2026-01-04 10:30:45 [info]: User registered successfully {"userId":"507f1f77bcf86cd799439011","username":"johndoe","email":"john@example.com"}
+```
+
+**File (JSON):**
+```json
+{
+  "timestamp": "2026-01-04 10:30:45",
+  "level": "info",
+  "message": "User registered successfully",
+  "userId": "507f1f77bcf86cd799439011",
+  "username": "johndoe",
+  "email": "john@example.com"
+}
+```
+
+### Viewing Logs
+
+**Real-time console logs:**
+```bash
+npm run dev
+```
+
+**View combined logs:**
+```bash
+cat logs/combined.log
+```
+
+**View error logs only:**
+```bash
+cat logs/error.log
+```
+
+**Tail logs in real-time:**
+```bash
+tail -f logs/combined.log
+```
 
 ---
 
