@@ -23,10 +23,10 @@ router.get('/recipes', async (req: Request, res: Response) => {
         // Extract and parse ingredients query parameter
         const ingredientsRaw = req.query.ingredients as string;
         const createdBy = req.query.createdBy as string;              // Filter by recipe creator
-        const ingredientsFilterType = req.query.any as string;
+        const ingredientsFilterType = (req.query.any as string) || 'false';
         const isAny: boolean = ingredientsFilterType.toLowerCase() === 'true';  // Use OR logic for ingredients
         const tagsRaw = req.query.tags as string;
-        const tagsFilterType = req.query.tagsAny as string;
+        const tagsFilterType = (req.query.tagsAny as string) || 'false';
         const isTagsAny: boolean = tagsFilterType.toLowerCase() === 'true';     // Use OR logic for tags
 
         // Apply ingredients filter if provided

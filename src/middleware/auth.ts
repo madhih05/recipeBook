@@ -17,8 +17,8 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     }
 
     try {
-        const decode = jwt.verify(token, process.env.JWT_SECRET as string);
-        req.user = decode as string; // Attach user info to request
+        const decode = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string };
+        req.user = decode.id; // Attach user id to request
         next();
     }
     catch (error) {

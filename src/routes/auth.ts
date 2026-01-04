@@ -81,7 +81,7 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 });
 
-router.post('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
         const user = await User.findById(req.user).select('username email createdAt savedRecipes');
         if (!user) {

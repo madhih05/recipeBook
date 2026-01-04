@@ -24,6 +24,9 @@ mongoose.connect(databaseUri).then(() => {
     console.error('Failed to connect to MongoDB', err);
 });
 
+// Parse JSON request bodies
+app.use(express.json());
+
 // Mount recipe routes
 app.use('/', recipeRoutes);
 app.use('/', registrationRoutes);
