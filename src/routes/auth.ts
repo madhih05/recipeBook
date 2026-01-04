@@ -3,6 +3,7 @@ import User from '../model/Users';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 dotenv.config();
 
@@ -79,5 +80,19 @@ router.post('/login', async (req: Request, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+router.post('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await User.findById(req.user).select('username email createdAt savedRecipes');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json({ user });
+    }
+    catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 export default router;
