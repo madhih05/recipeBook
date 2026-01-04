@@ -7,6 +7,8 @@ import mongoose from 'mongoose';
 // Import recipe routes
 import recipeRoutes from './routes/data';
 import registrationRoutes from './routes/auth';
+// Import logger
+import logger from './utils/logger';
 
 // Initialize Express application
 const app = express();
@@ -19,9 +21,9 @@ const port = process.env.PORT || 3000;
 
 // Establish connection to MongoDB
 mongoose.connect(databaseUri).then(() => {
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB', { uri: databaseUri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@') });
 }).catch((err) => {
-    console.error('Failed to connect to MongoDB', err);
+    logger.error('Failed to connect to MongoDB', { error: err.message, stack: err.stack });
 });
 
 // Parse JSON request bodies
@@ -33,5 +35,5 @@ app.use('/', registrationRoutes);
 
 // Start the Express server and listen on the specified port
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    logger.info(`Server is running on port ${port}`, { port, environment: process.env.NODE_ENV || 'development' });
 });

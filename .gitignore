@@ -30,5 +30,8 @@ coverage/
 *.log
 .cache/
 
+# Logs
+logs/
+
 # Test
 test.ts
