@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import Recipe from '../model/Recipe';
 import User from '../model/Users';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -128,8 +129,53 @@ router.get('/recipes/:id', async (req: Request, res: Response) => {
  * POST /recipes
  * Create a new recipe (placeholder implementation)
  */
-router.post('/recipes', express.json(), async (req: Request, res: Response) => {
+router.post('/recipes', express.json(), authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+        const { title, ingredients, instructions, tags, description } = req.body;
+        const createdBy = req.user; // Extracted from authenticated token
 
+        // Create new recipe document
+        const newRecipe = new Recipe({
+            title,
+            ingredients,
+            instructions,
+            tags,
+            description,
+            createdBy,
+            // createdAt: new Date(),
+        });
+
+        // Save recipe to database
+        await newRecipe.save();
+
+        // Return success response with created recipe
+        res.status(201).json({ message: 'Recipe created successfully', recipe: newRecipe });
+    }
+    catch (error: any) {
+        // Handle errors and return 500 status
+        res.status(500).json({ error: error.message });
+    }
 });
+
+router.delete('/recipes/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+        const recipeId = req.params.id;
+        const userId = req.user;
+
+        // Find the recipe to ensure it exists and check ownership
+        const recipe = await Recipe.findById(recipeId);
+        if (!recipe) {
+            return res.status(404).json({ error: 'Recipe not found' });
+        }
+        if (recipe.createdBy !== userId) {
+            return res.status(403).json({ error: 'Forbidden: You can only delete your own recipes' });
+        }
+        await Recipe.findByIdAndDelete(recipeId);
+        res.json({ message: 'Recipe deleted successfully' });
+    }
+    catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+})
 
 export default router;
