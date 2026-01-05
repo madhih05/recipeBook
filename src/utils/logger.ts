@@ -1,49 +1,83 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
 import winston from 'winston';
 import path from 'path';
 
-// Define custom log format
-const logFormat = winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const MAX_FILE_SIZE = 5242880; // 5MB
+const MAX_FILES_KEPT = 5;
+const TIMESTAMP_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+const LOGS_DIR = path.join(__dirname, '../../logs');
+
+// ============================================================================
+// FORMAT CONFIGURATION
+// ============================================================================
+
+/**
+ * Format for file output (JSON format for structured logging).
+ * Includes timestamp, error stacks, and all metadata.
+ */
+const fileFormat = winston.format.combine(
+    winston.format.timestamp({ format: TIMESTAMP_FORMAT }),
     winston.format.errors({ stack: true }),
     winston.format.splat(),
     winston.format.json()
 );
 
-// Define console format with colors
+/**
+ * Format for console output (human-readable with colors).
+ * Displays timestamp, log level, message, and metadata in a readable format.
+ */
 const consoleFormat = winston.format.combine(
     winston.format.colorize(),
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.printf(({ timestamp, level, message, ...meta }) => {
-        let msg = `${timestamp} [${level}]: ${message}`;
-        if (Object.keys(meta).length > 0) {
-            msg += ` ${JSON.stringify(meta)}`;
+    winston.format.timestamp({ format: TIMESTAMP_FORMAT }),
+    winston.format.printf(({ timestamp, level, message, ...metadata }) => {
+        let logMessage = `${timestamp} [${level}]: ${message}`;
+
+        // Append metadata if present
+        if (Object.keys(metadata).length > 0) {
+            logMessage += ` ${JSON.stringify(metadata)}`;
         }
-        return msg;
+
+        return logMessage;
     })
 );
 
-// Create logs directory path
-const logsDir = path.join(__dirname, '../../logs');
+// ============================================================================
+// LOGGER INITIALIZATION
+// ============================================================================
 
-// Create logger instance
+/**
+ * Winston logger instance configured with multiple transports.
+ * - File: All logs (combined.log) and error-only logs (error.log)
+ * - Console: Colored human-readable output for development
+ */
 const logger = winston.createLogger({
-    level: process.env.LOG_LEVEL || 'info',
-    format: logFormat,
+    level: LOG_LEVEL,
+    format: fileFormat,
     transports: [
-        // Write all logs to combined.log
+        // Combined log file (all log levels)
         new winston.transports.File({
-            filename: path.join(logsDir, 'combined.log'),
-            maxsize: 5242880, // 5MB
-            maxFiles: 5,
+            filename: path.join(LOGS_DIR, 'combined.log'),
+            maxsize: MAX_FILE_SIZE,
+            maxFiles: MAX_FILES_KEPT,
         }),
-        // Write error logs to error.log
+
+        // Error-only log file
         new winston.transports.File({
-            filename: path.join(logsDir, 'error.log'),
+            filename: path.join(LOGS_DIR, 'error.log'),
             level: 'error',
-            maxsize: 5242880, // 5MB
-            maxFiles: 5,
+            maxsize: MAX_FILE_SIZE,
+            maxFiles: MAX_FILES_KEPT,
         }),
-        // Write all logs to console
+
+        // Console output (development)
         new winston.transports.Console({
             format: consoleFormat,
         }),
