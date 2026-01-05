@@ -20,6 +20,7 @@ export interface IUser extends Document {
     savedRecipes?: mongoose.Types.ObjectId[]; // References to saved Recipe documents
     dietaryPreferences?: string[]; // Optional dietary restrictions/preferences
     createdAt: Date; // Account creation timestamp
+    following: mongoose.Types.ObjectId[]; // References to followed User documents
 }
 
 // ============================================================================
@@ -76,6 +77,15 @@ const UserSchema: Schema = new Schema({
         type: Date,
         default: Date.now,
     },
+
+    // Users that this user is following
+    following: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: [], // Initializes as empty array
+        },
+    ],
 });
 
 // ============================================================================

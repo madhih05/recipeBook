@@ -506,4 +506,60 @@ router.get('/user/search', async (req: Request, res: Response) => {
     }
 });
 
+router.post('/user/:userid/follow', authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+        const targetUserId = req.params.userid;
+        const userId = req.user;
+
+        logger.info('Toggling follow status', {
+            targetUserId,
+            userId,
+        });
+
+        const user = await User.findById(userId);
+        if (!user) {
+            logger.warn('Follow failed: User not found', { userId });
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (!user.following) {
+            user.following = [];
+        }
+
+        const targetUser = await User.findById(targetUserId).select('username');
+        if (!targetUser) {
+            logger.warn('Follow failed: Target user not found', { targetUserId });
+            return res.status(404).json({ error: 'Target user not found' });
+        }
+
+        const isFollowing = user.following.some(id => id.toString() === targetUserId);
+        if (isFollowing) {
+            logger.info('Unfollowing user', {
+                targetUserId,
+                userId,
+            });
+            user.following = user.following.filter(id => id.toString() !== targetUserId);
+            await user.save();
+            res.json({ message: `Unfollowed ${targetUser.username}` });
+        } else {
+            logger.info('Following user', {
+                targetUserId,
+                userId,
+            });
+            user.following.push(targetUserId as any);
+            await user.save();
+            res.json({ message: `Followed ${targetUser.username}` });
+        }
+    }
+    catch (error: any) {
+        logger.error('Error toggling follow status', {
+            targetUserId: req.params.userid,
+            userId: req.user,
+            error: error.message,
+            stack: error.stack,
+        });
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;
