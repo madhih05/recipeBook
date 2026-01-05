@@ -285,6 +285,71 @@ router.post(
     }
 );
 
+router.put('/recipes/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+    const recipeId = req.params.id;
+    const userId = req.user;
+    const updateData = req.body;
+
+    try {
+        // Check authentication
+        if (!userId) {
+            logger.warn('Update failed: User not authenticated');
+            return res.status(401).json({ error: 'Unauthorized: User not authenticated' });
+        }
+
+        logger.info('Attempting to update recipe', {
+            recipeId,
+            userId,
+        });
+
+        // Find the recipe to ensure it exists
+        const recipe = await Recipe.findById(recipeId);
+
+        if (!recipe) {
+            logger.warn('Update failed: Recipe not found', { recipeId });
+            return res.status(404).json({ error: 'Recipe not found' });
+        }
+
+        // Check ownership
+        if (recipe.createdBy.toString() !== userId) {
+            logger.warn('Update failed: User does not own recipe', {
+                recipeId,
+                userId,
+                actualOwner: recipe.createdBy,
+            });
+            return res.status(403).json({
+                error: 'Forbidden: You can only update your own recipes',
+            });
+        }
+
+        // Update the recipe with new data
+
+        const updatedRecipe = await Recipe.findByIdAndUpdate(
+            recipeId,
+            { ...updateData, updatedAt: new Date() },
+            { new: true }
+        );
+
+        logger.info('Recipe updated successfully', {
+            recipeId,
+            userId,
+            updatedRecipe,
+        });
+
+        res.json({
+            message: 'Recipe updated successfully',
+            recipe: updatedRecipe,
+        });
+    } catch (error: any) {
+        logger.error('Error updating recipe', {
+            recipeId: req.params.id,
+            userId: req.user,
+            error: error.message,
+            stack: error.stack,
+        });
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // ============================================================================
 // DELETE /recipes/:id - Delete a recipe
@@ -349,5 +414,54 @@ router.delete(
         }
     }
 );
+
+router.post('/recipes/:id/save', authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+        const recipeId = req.params.id;
+        const userId = req.user;
+
+        logger.info('Saving recipe to user profile', {
+            recipeId,
+            userId,
+        });
+
+        const user = await User.findById(userId);
+        if (!user) {
+            logger.warn('Save failed: User not found', { userId });
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (!user.savedRecipes) {
+            user.savedRecipes = [];
+        }
+
+        const isSaved = user.savedRecipes.some(id => id.toString() === recipeId);
+        if (isSaved) {
+            logger.info('Removing from saved recipes', {
+                recipeId,
+                userId,
+            });
+            user.savedRecipes = user.savedRecipes.filter(id => id.toString() !== recipeId);
+            await user.save();
+            res.json({ message: 'Recipe removed from saved recipes' });
+        } else {
+            logger.info('Adding to saved recipes', {
+                recipeId,
+                userId,
+            });
+            user.savedRecipes.push(recipeId as any);
+            await user.save();
+            res.json({ message: 'Recipe saved successfully' });
+        }
+    } catch (error: any) {
+        logger.error('Error saving recipe to user profile', {
+            recipeId: req.params.id,
+            userId: req.user,
+            error: error.message,
+            stack: error.stack,
+        });
+        res.status(500).json({ error: error.message });
+    }
+});
 
 export default router;
