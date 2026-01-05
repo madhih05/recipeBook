@@ -28,11 +28,11 @@ router.get('/recipes', async (req: Request, res: Response) => {
 
         // Parse query parameters
         const ingredientsRaw = req.query.ingredients as string;
-        const createdBy = req.query.createdBy as string;
         const ingredientsFilterType = (req.query.any as string) || 'false';
         const tagsRaw = req.query.tags as string;
         const tagsFilterType = (req.query.tagsAny as string) || 'false';
         const page = parseInt(req.query.page as string) || 1;
+        const search = req.query.search as string;
 
         // Determine filter logic (OR vs AND)
         const isAny: boolean = ingredientsFilterType.toLowerCase() === 'true';
@@ -65,6 +65,13 @@ router.get('/recipes', async (req: Request, res: Response) => {
             filter.tags = isTagsAny
                 ? { $in: tags }    // Match ANY tag (OR)
                 : { $all: tags };  // Match ALL tags (AND)
+        }
+
+        if (search) {
+            filter.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ];
         }
 
         // Query database with constructed filter
