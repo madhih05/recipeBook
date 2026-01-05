@@ -27,7 +27,7 @@ const recipeSchema: Schema = new Schema({
     ingredients: { type: [String], required: true },            // List of ingredients (required)
     tags: { type: [String], required: false },                  // Optional categorization tags
     instructions: { type: String, required: true },             // Cooking steps (required)
-    createdBy: { type: String, required: true },                // Creator's username (required)
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },  // Reference to User model by ObjectId
     createdAt: { type: Date, default: Date.now },               // Auto-set to current time on creation
     updatedAt: { type: Date },                                  // Manual timestamp for updates
 });
