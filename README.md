@@ -170,20 +170,30 @@ Authorization: Bearer <token>
 
 #### GET /recipes
 
-Retrieve all recipes with optional filtering by ingredients, tags, or creator.
+Retrieve all recipes with optional filtering by ingredients, tags, or creator. Results are paginated and sorted by creation date (newest first). Instructions are excluded for summary view.
 
 **Query Parameters:**
 - `ingredients` (string): Comma-separated ingredient names (e.g., `salt,pepper`)
 - `any` (boolean): Use OR logic for ingredients (default: `false` for AND logic)
 - `tags` (string): Comma-separated tag names (e.g., `dessert,quick`)
 - `tagsAny` (boolean): Use OR logic for tags (default: `false` for AND logic)
-- `createdBy` (string): Filter by recipe creator's username
+- `createdBy` (string): Filter by recipe creator's username (currently disabled)
+- `page` (number): Page number for pagination (default: `1`)
+
+**Pagination:**
+- Default page size: 60 recipes per page
+- Response includes pagination metadata with total pages, current page, and hasNextPage flag
 
 **Examples:**
 
-Get all recipes:
+Get all recipes (first page):
 ```
 GET /recipes
+```
+
+Get second page:
+```
+GET /recipes?page=2
 ```
 
 Get recipes with ALL specified ingredients:
@@ -201,38 +211,46 @@ Get recipes with specific tags:
 GET /recipes?tags=dessert,quick&tagsAny=false
 ```
 
-Get recipes by specific user:
+Combine filters with pagination:
 ```
-GET /recipes?createdBy=johndoe
-```
-
-Combine filters:
-```
-GET /recipes?ingredients=salt&tags=dessert&createdBy=johndoe
+GET /recipes?ingredients=salt&tags=dessert&page=1
 ```
 
 **Response (200 OK):**
 ```json
-[
-  {
-    "_id": "507f1f77bcf86cd799439012",
-    "title": "Chocolate Cake",
-    "description": "A delicious homemade chocolate cake",
-    "ingredients": ["flour", "sugar", "cocoa", "butter", "eggs"],
-    "tags": ["dessert", "baking"],
-    "instructions": "Mix dry ingredients, combine with wet ingredients, bake at 350°F for 30 minutes",
-    "createdBy": "johndoe",
-    "createdAt": "2024-01-04T10:35:00Z",
-    "updatedAt": "2024-01-04T10:35:00Z"
+{
+  "recipes": [
+    {
+      "_id": "507f1f77bcf86cd799439012",
+      "title": "Chocolate Cake",
+      "description": "A delicious homemade chocolate cake",
+      "ingredients": ["flour", "sugar", "cocoa", "butter", "eggs"],
+      "tags": ["dessert", "baking"],
+      "createdBy": {
+        "_id": "507f1f77bcf86cd799439011",
+        "username": "johndoe"
+      },
+      "createdAt": "2024-01-04T10:35:00Z",
+      "updatedAt": "2024-01-04T10:35:00Z"
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 5,
+    "hasPreviousPage": false,
+    "totalRecipes": 287,
+    "hasNextPage": true
   }
-]
+}
 ```
+
+**Note:** The `instructions` field is excluded from this endpoint for performance. Use `GET /recipes/:id` to retrieve the complete recipe with instructions.
 
 ---
 
 #### POST /recipes
 
-Create a new recipe (requires authentication).
+Create a new recipe (requires authentication). The authenticated user becomes the recipe creator.
 
 **Headers:**
 ```
@@ -262,7 +280,7 @@ Content-Type: application/json
     "ingredients": ["flour", "sugar", "cocoa", "butter", "eggs"],
     "tags": ["dessert", "baking"],
     "instructions": "Mix dry ingredients, combine with wet ingredients, bake at 350°F for 30 minutes",
-    "createdBy": "johndoe",
+    "createdBy": "507f1f77bcf86cd799439011",
     "createdAt": "2024-01-04T10:35:00Z",
     "updatedAt": "2024-01-04T10:35:00Z"
   }
@@ -277,8 +295,8 @@ Content-Type: application/json
 ```
 
 **Validation:**
-- Title, description, ingredients, and instructions are required
-- Tags are optional
+- Title, description, ingredients, instructions, and tags are required
+- Authentication token is required
 
 ---
 
@@ -370,11 +388,23 @@ DELETE /recipes/507f1f77bcf86cd799439012
 
 #### GET /user/:username
 
-Retrieve a user's profile and all recipes they created.
+Retrieve a user's profile and all recipes they created. User email is excluded for privacy. Results are paginated.
+
+**Query Parameters:**
+- `page` (number): Page number for pagination (default: `1`)
+
+**Pagination:**
+- Default page size: 60 recipes per page
+- Response includes pagination metadata with total pages, current page, and hasNextPage flag
 
 **Example:**
 ```
 GET /user/johndoe
+```
+
+Get second page of user's recipes:
+```
+GET /user/johndoe?page=2
 ```
 
 **Response (200 OK):**
@@ -393,12 +423,17 @@ GET /user/johndoe
       "description": "A delicious homemade chocolate cake",
       "ingredients": ["flour", "sugar", "cocoa", "butter", "eggs"],
       "tags": ["dessert", "baking"],
-      "instructions": "Mix dry ingredients, combine with wet ingredients, bake at 350°F for 30 minutes",
-      "createdBy": "johndoe",
       "createdAt": "2024-01-04T10:35:00Z",
       "updatedAt": "2024-01-04T10:35:00Z"
     }
-  ]
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 3,
+    "hasPreviousPage": false,
+    "totalRecipes": 145,
+    "hasNextPage": true
+  }
 }
 ```
 
@@ -412,6 +447,7 @@ GET /user/johndoe
 **Note:**
 - User email is excluded from the response for privacy
 - Returns only the public profile information
+- The `createdBy` and `instructions` fields are excluded from recipe results for summary view
 
 ---
 
