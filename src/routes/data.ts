@@ -471,4 +471,39 @@ router.post('/recipes/:id/save', authenticateToken, async (req: AuthRequest, res
     }
 });
 
+router.get('/user/search', async (req: Request, res: Response) => {
+    try {
+        const query = req.query.q as string;
+        logger.info('Searching users', { query });
+
+        if (!query || query.trim() === '') {
+            logger.warn('Search query is empty');
+            return res.status(400).json({ error: 'Search query cannot be empty' });
+        }
+
+        const users = await User.find({
+            username: { $regex: query.toLowerCase(), $options: 'i' },
+        }).select('username createdAt');
+
+        logger.info(`Found ${users.length} users matching the search`, {
+            query,
+            count: users.length,
+        });
+
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'No users found' });
+        }
+
+        res.json({ users });
+    }
+    catch (error: any) {
+        logger.error('Error searching users', {
+            query: req.query.q,
+            error: error.message,
+            stack: error.stack,
+        });
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;
