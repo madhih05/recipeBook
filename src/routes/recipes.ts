@@ -320,7 +320,7 @@ router.delete(
             }
 
             // Check ownership
-            if (recipe.createdBy !== userId) {
+            if (recipe.createdBy.toString() !== userId) {
                 logger.warn('Delete failed: User does not own recipe', {
                     recipeId,
                     userId,
