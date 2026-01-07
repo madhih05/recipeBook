@@ -6,6 +6,7 @@ A Node.js/Express REST API for managing and querying recipes with user authentic
 
 - [Installation](#installation)
 - [Configuration](#configuration)
+- [Project Structure](#project-structure)
 - [Running the Server](#running-the-server)
 - [API Endpoints](#api-endpoints)
   - [Authentication](#authentication)
@@ -37,6 +38,31 @@ LOG_LEVEL=info
 - `JWT_SECRET`: Secret key for JWT token signing
 - `PORT`: Server port (default: 3000)
 - `LOG_LEVEL`: Logging level - `error`, `warn`, `info`, `debug` (default: `info`)
+
+## Project Structure
+
+```
+recipeBook/
+├── src/
+│   ├── server.ts           # Main Express server
+│   ├── middleware/
+│   │   └── auth.ts         # JWT authentication middleware
+│   ├── model/
+│   │   ├── Recipe.ts       # Recipe Mongoose schema
+│   │   └── Users.ts        # User Mongoose schema
+│   ├── routes/
+│   │   ├── auth.ts         # Authentication routes (/register, /login, /me)
+│   │   ├── recipes.ts      # Recipe routes (/recipes/*)
+│   │   └── users.ts        # User routes (/user/*)
+│   └── utils/
+│       └── logger.ts       # Winston logger configuration
+├── logs/                   # Log files directory
+├── dist/                   # Compiled JavaScript output
+├── .env                    # Environment variables
+├── package.json
+├── tsconfig.json
+└── test.ts                 # API test suite
+```
 
 ## Running the Server
 
@@ -177,7 +203,7 @@ Retrieve all recipes with optional filtering by ingredients, tags, or creator. R
 - `any` (boolean): Use OR logic for ingredients (default: `false` for AND logic)
 - `tags` (string): Comma-separated tag names (e.g., `dessert,quick`)
 - `tagsAny` (boolean): Use OR logic for tags (default: `false` for AND logic)
-- `createdBy` (string): Filter by recipe creator's username (currently disabled)
+- `search` (string): Search recipes by title or description
 - `page` (number): Page number for pagination (default: `1`)
 
 **Pagination:**
@@ -340,6 +366,68 @@ GET /recipes/507f1f77bcf86cd799439012
 
 ---
 
+#### PUT /recipes/:id
+
+Update a recipe (requires authentication and ownership).
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "title": "Updated Chocolate Cake",
+  "description": "An even more delicious chocolate cake",
+  "ingredients": ["flour", "sugar", "cocoa", "butter", "eggs", "vanilla"],
+  "tags": ["dessert", "baking", "special"],
+  "instructions": "Mix dry ingredients, combine with wet ingredients, add vanilla, bake at 350°F for 35 minutes"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "Recipe updated successfully",
+  "recipe": {
+    "_id": "507f1f77bcf86cd799439012",
+    "title": "Updated Chocolate Cake",
+    "description": "An even more delicious chocolate cake",
+    "ingredients": ["flour", "sugar", "cocoa", "butter", "eggs", "vanilla"],
+    "tags": ["dessert", "baking", "special"],
+    "instructions": "Mix dry ingredients, combine with wet ingredients, add vanilla, bake at 350°F for 35 minutes",
+    "createdBy": "507f1f77bcf86cd799439011",
+    "createdAt": "2024-01-04T10:35:00Z",
+    "updatedAt": "2024-01-04T14:20:00Z"
+  }
+}
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized: User not authenticated"
+}
+```
+
+**Error Response (403 Forbidden):**
+```json
+{
+  "error": "Forbidden: You can only update your own recipes"
+}
+```
+
+**Error Response (404 Not Found):**
+```json
+{
+  "error": "Recipe not found"
+}
+```
+
+---
+
 #### DELETE /recipes/:id
 
 Delete a recipe (requires authentication and ownership).
@@ -379,6 +467,50 @@ DELETE /recipes/507f1f77bcf86cd799439012
 ```json
 {
   "error": "Recipe not found"
+}
+```
+
+---
+
+#### POST /recipes/:id/save
+
+Save or unsave a recipe to your profile (requires authentication). Toggles the saved state.
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Example:**
+```
+POST /recipes/507f1f77bcf86cd799439012/save
+```
+
+**Response (200 OK) - When saving:**
+```json
+{
+  "message": "Recipe saved successfully"
+}
+```
+
+**Response (200 OK) - When removing:**
+```json
+{
+  "message": "Recipe removed from saved recipes"
+}
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Error Response (404 Not Found):**
+```json
+{
+  "error": "User not found"
 }
 ```
 
@@ -448,6 +580,103 @@ GET /user/johndoe?page=2
 - User email is excluded from the response for privacy
 - Returns only the public profile information
 - The `createdBy` and `instructions` fields are excluded from recipe results for summary view
+
+---
+
+#### GET /user/search
+
+Search for users by username.
+
+**Query Parameters:**
+- `q` (string, required): Search query string
+
+**Example:**
+```
+GET /user/search?q=john
+```
+
+**Response (200 OK):**
+```json
+{
+  "users": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "username": "johndoe",
+      "createdAt": "2024-01-04T10:30:00Z"
+    },
+    {
+      "_id": "507f1f77bcf86cd799439013",
+      "username": "johnsmith",
+      "createdAt": "2024-01-03T08:15:00Z"
+    }
+  ]
+}
+```
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "error": "Search query cannot be empty"
+}
+```
+
+**Error Response (404 Not Found):**
+```json
+{
+  "error": "No users found"
+}
+```
+
+---
+
+#### POST /user/:userid/follow
+
+Follow or unfollow a user (requires authentication). Toggles the follow state.
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Example:**
+```
+POST /user/507f1f77bcf86cd799439013/follow
+```
+
+**Response (200 OK) - When following:**
+```json
+{
+  "message": "Followed johnsmith"
+}
+```
+
+**Response (200 OK) - When unfollowing:**
+```json
+{
+  "message": "Unfollowed johnsmith"
+}
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**Error Response (404 Not Found - Current user):**
+```json
+{
+  "error": "User not found"
+}
+```
+
+**Error Response (404 Not Found - Target user):**
+```json
+{
+  "error": "Target user not found"
+}
+```
 
 ---
 
