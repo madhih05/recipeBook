@@ -5,7 +5,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import recipeRoutes from './routes/data';
+import recipeRoutes from './routes/recipes';
+import userRoutes from './routes/users';
 import registrationRoutes from './routes/auth';
 import logger from './utils/logger';
 
@@ -52,7 +53,8 @@ app.use(express.json());
 // ROUTES
 // ============================================================================
 
-app.use('/', recipeRoutes);
+app.use('/recipes', recipeRoutes);
+app.use('/user', userRoutes);
 app.use('/', registrationRoutes);
 
 // ============================================================================
