@@ -55,7 +55,7 @@ app.use(express.json());
 
 app.use('/recipes', recipeRoutes);
 app.use('/user', userRoutes);
-app.use('/', registrationRoutes);
+app.use('/auth', registrationRoutes);
 
 // ============================================================================
 // SERVER STARTUP

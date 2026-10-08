@@ -51,9 +51,12 @@ router.get('/', async (req: Request, res: Response) => {
                 .split(',')
                 .map(ing => ing.trim().toLowerCase());
 
-            filter.ingredients = isAny
-                ? { $in: ingredients }    // Match ANY ingredient (OR)
-                : { $all: ingredients };  // Match ALL ingredients (AND)
+        // Convert your array of strings into an array of case-insensitive regular expressions
+        const ingredientRegexes = ingredients.map(ing => new RegExp(ing, 'i'));
+
+        filter.ingredients = isAny
+            ? { $in: ingredientRegexes }    // Match ANY ingredient containing the string
+            : { $all: ingredientRegexes };  // Match ALL ingredients containing the strings  // Match ALL ingredients (AND)
         }
 
         // Apply tags filter if provided
@@ -62,9 +65,11 @@ router.get('/', async (req: Request, res: Response) => {
                 .split(',')
                 .map(tag => tag.trim().toLowerCase());
 
+            const tagRegexes = tags.map(tag => new RegExp(`^${tag}$`, 'i'));
+
             filter.tags = isTagsAny
-                ? { $in: tags }    // Match ANY tag (OR)
-                : { $all: tags };  // Match ALL tags (AND)
+                ? { $in: tagRegexes }    // Match ANY tag (OR)
+                : { $all: tagRegexes };  // Match ALL tags (AND)
         }
 
         if (search) {
