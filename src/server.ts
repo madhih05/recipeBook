@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import recipeRoutes from './routes/recipes';
 import userRoutes from './routes/users';
 import registrationRoutes from './routes/auth';
+import coldstart from './routes/coldstart';
 import logger from './utils/logger';
 
 // ============================================================================
@@ -56,6 +57,7 @@ app.use(express.json());
 app.use('/recipes', recipeRoutes);
 app.use('/user', userRoutes);
 app.use('/auth', registrationRoutes);
+app.use('/coldstart', coldstart);
 
 // ============================================================================
 // SERVER STARTUP
